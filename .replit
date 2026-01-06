@@ -1,5 +1,5 @@
 language = "python3"
-run = "python main.py"
+run = "python3 main.py"
 
 [env]
 DISPLAY_NAME = "XTAGRAM Social Network"
