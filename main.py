@@ -79,57 +79,57 @@ HTML = '''
         let isAndroid = false;
         
         // Определяем Android
-        function detectAndroid() {
-            if (typeof Android !== 'undefined') {
+        function detectAndroid() {{
+            if (typeof Android !== 'undefined') {{
                 isAndroid = true;
                 console.log('📱 В Android приложении');
                 document.body.classList.add('android-app');
                 return true;
-            }
+            }}
             
-            if (navigator.userAgent.includes('XTAGRAM-App')) {
+            if (navigator.userAgent.includes('XTAGRAM-App')) {{
                 isAndroid = true;
                 console.log('📱 В WebView Android');
                 return true;
-            }
+            }}
             
             return false;
-        }
+        }}
         
         // Отправка уведомления
-        function sendAndroidNotification(title, message) {
+        function sendAndroidNotification(title, message) {{
             if (!isAndroid) return false;
             
-            try {
-                if (typeof Android !== 'undefined') {
+            try {{
+                if (typeof Android !== 'undefined') {{
                     Android.showNotification(title, message);
                     console.log('✅ Уведомление отправлено в Android');
                     return true;
-                }
-            } catch (e) {
+                }}
+            }} catch (e) {{
                 console.error('Ошибка Android:', e);
-            }
+            }}
             return false;
-        }
+        }}
         
         // При загрузке страницы
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function() {{
             isAndroid = detectAndroid();
             
             // Показываем статус
-            if (isAndroid) {
+            if (isAndroid) {{
                 const status = document.createElement('div');
                 status.className = 'card';
                 status.innerHTML = '<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:24px;">📱</span><div><b>Android приложение</b><br><small>Уведомления включены</small></div></div>';
                 document.querySelector('.container').prepend(status);
-            }
+            }}
             
             // Перехватываем создание постов
-            document.querySelectorAll('form').forEach(form => {
-                if (form.action.includes('post') || form.querySelector('textarea')) {
-                    form.addEventListener('submit', function(e) {
+            document.querySelectorAll('form').forEach(form => {{
+                if (form.action.includes('post') || form.querySelector('textarea')) {{
+                    form.addEventListener('submit', function(e) {{
                         const textarea = this.querySelector('textarea');
-                        if (textarea && textarea.value.trim()) {
+                        if (textarea && textarea.value.trim()) {{
                             const content = textarea.value;
                             
                             // Отправляем уведомление
@@ -142,36 +142,36 @@ HTML = '''
                             if (navigator.vibrate) navigator.vibrate(200);
                             
                             // Отправляем на сервер для логирования
-                            fetch('/api/log_notification', {
+                            fetch('/api/log_notification', {{
                                 method: 'POST',
-                                headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify({
+                                headers: {{'Content-Type': 'application/json'}},
+                                body: JSON.stringify({{
                                     type: 'new_post',
                                     content: content.substring(0, 50)
-                                })
-                            });
-                        }
-                    });
-                }
-            });
+                                }})
+                            }});
+                        }}
+                    }});
+                }}
+            }});
             
             // Кнопка теста уведомлений
             const testBtn = document.createElement('button');
             testBtn.className = 'btn-secondary';
             testBtn.style.marginTop = '10px';
             testBtn.innerHTML = '🔔 Тест уведомления';
-            testBtn.onclick = function() {
-                if (sendAndroidNotification('Тест XTAGRAM', 'Уведомления работают!')) {
+            testBtn.onclick = function() {{
+                if (sendAndroidNotification('Тест XTAGRAM', 'Уведомления работают!')) {{
                     alert('✅ Уведомление отправлено в Android!');
-                } else {
+                }} else {{
                     alert('⚠️  Не в Android приложении');
-                }
-            };
+                }}
+            }};
             
             // Добавляем кнопку в форму создания поста
             const form = document.querySelector('form');
             if (form) form.appendChild(testBtn);
-        });
+        }});
     </script>
 </head>
 <body>
@@ -227,8 +227,17 @@ def home():
             </div>
             {posts_html}
             <script>
-                function like(id){fetch("/like/"+id).then(r=>r.json()).then(data=>{alert('Лайк добавлен!');location.reload();})}
-                function sharePost(id){sendAndroidNotification("Поделились постом", "ID: "+id)}
+                function like(id){{
+                    fetch("/like/"+id)
+                        .then(r => r.json())
+                        .then(data => {{
+                            alert('Лайк добавлен!');
+                            location.reload();
+                        }});
+                }}
+                function sharePost(id){{
+                    sendAndroidNotification("Поделились постом", "ID: "+id);
+                }}
             </script>
         '''
         
@@ -292,6 +301,29 @@ def create_post():
     
     return redirect('/')
 
+@app.route('/like/<int:post_id>')
+@auth_required
+def like_post(post_id):
+    """Обработка лайков"""
+    post = Post.query.get(post_id)
+    if post:
+        post.likes += 1
+        db.session.commit()
+        
+        # Создаем уведомление для автора поста
+        if post.user_id != current_user().id:
+            notification = Notification(
+                user_id=post.user_id,
+                title='Новый лайк',
+                message=f'Кто-то лайкнул ваш пост: {post.content[:50]}...',
+                is_read=False
+            )
+            db.session.add(notification)
+            db.session.commit()
+        
+        return jsonify({'likes': post.likes})
+    return jsonify({'error': 'Post not found'}), 404
+
 @app.route('/notifications')
 @auth_required
 def notifications():
@@ -325,7 +357,6 @@ def read_notification(notif_id):
         db.session.commit()
     return redirect('/notifications')
 
-# Остальные роуты (регистрация, логин, профиль и т.д.) остаются как в оригинале
 @app.route('/register', methods=['GET','POST'])
 def register():
     if request.method == 'POST':
