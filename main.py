@@ -227,7 +227,7 @@ def home():
             </div>
             {posts_html}
             <script>
-                function like(id){fetch("/like/"+id)
+                function like(id){fetch("/like/"+id).then(r=>r.json()).then(data=>{alert('Лайк добавлен!');location.reload();})}
                 function sharePost(id){sendAndroidNotification("Поделились постом", "ID: "+id)}
             </script>
         '''
